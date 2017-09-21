@@ -14,6 +14,7 @@ import { CppClientContribution } from "./cpp-client-contribution";
 import { SwitchSourceHeaderRequest } from "./cpp-protocol";
 import { TextDocumentIdentifier } from "@theia/languages/lib/common";
 import { EditorManager } from "@theia/editor/lib/browser";
+import { ExecuteCommandRequest, ExecuteCommandParams } from "vscode-languageserver-protocol";
 
 /**
  * Switch between source/header file
@@ -21,6 +22,21 @@ import { EditorManager } from "@theia/editor/lib/browser";
 export const SWITCH_SOURCE_HEADER: Command = {
     id: 'switch_source_header',
     label: 'Switch between source/header file'
+};
+
+export const DUMP_INCLUSIONS: Command = {
+    id: 'dump_inclusions',
+    label: 'Dump file inclusions (Debug)'
+};
+
+export const DUMP_INCLUDED_BY: Command = {
+    id: 'dump_included_by',
+    label: 'Dump files including this file (Debug)'
+};
+
+export const REINDEX: Command = {
+    id: 'reindex',
+    label: 'Reindex workspace (Debug)'
 };
 
 export const FILE_OPEN_PATH = (path: string): Command => <Command>{
@@ -46,7 +62,21 @@ export class CppCommandContribution implements CommandContribution {
                 this.switchSourceHeader();
             }
         });
-
+        commands.registerCommand(REINDEX, {
+            isEnabled: () => true,
+            isVisible: () => true,
+            execute: () => this.reindex()
+        });
+        commands.registerCommand(DUMP_INCLUSIONS, {
+            isEnabled: () => true,
+            isVisible: () => true,
+            execute: () => this.dumpInclusions()
+        });
+        commands.registerCommand(DUMP_INCLUDED_BY, {
+            isEnabled: () => true,
+            isVisible: () => true,
+            execute: () => this.dumpIncludedBy()
+        });
     }
 
     protected switchSourceHeader(): void {
@@ -57,6 +87,29 @@ export class CppCommandContribution implements CommandContribution {
                     open(this.openerService, new URI(sourceUri.toString()));
                 }
             });
+        });
+    }
+
+    private dumpInclusions(): void {
+        const docIdentifier = TextDocumentIdentifier.create(this.selectionService.selection.uri.toString());
+        const params: ExecuteCommandParams = { command: "dumpinclusions", arguments: [docIdentifier] };
+        this.clientContribution.languageClient.then(languageClient => {
+            languageClient.sendRequest(ExecuteCommandRequest.type, params);
+        });
+    }
+
+    private dumpIncludedBy(): void {
+        const docIdentifier = TextDocumentIdentifier.create(this.selectionService.selection.uri.toString());
+        const params: ExecuteCommandParams = { command: "dumpincludedby", arguments: [docIdentifier] };
+        this.clientContribution.languageClient.then(languageClient => {
+            languageClient.sendRequest(ExecuteCommandRequest.type, params);
+        });
+    }
+
+    private reindex(): void {
+        const params: ExecuteCommandParams = { command: "reindex" };
+        this.clientContribution.languageClient.then(languageClient => {
+            languageClient.sendRequest(ExecuteCommandRequest.type, params);
         });
     }
 }
