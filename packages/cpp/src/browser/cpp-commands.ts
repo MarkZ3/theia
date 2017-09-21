@@ -14,6 +14,7 @@ import { CppClientContribution } from "./cpp-client-contribution";
 import { TextDocumentItemRequest } from "./cpp-protocol";
 import { TextDocumentIdentifier } from "@theia/languages/lib/common";
 import { EDITOR_CONTEXT_MENU_ID } from "@theia/editor/lib/browser";
+import { ExecuteCommandRequest, ExecuteCommandParams } from "vscode-languageserver-protocol";
 
 
 /**
@@ -22,6 +23,16 @@ import { EDITOR_CONTEXT_MENU_ID } from "@theia/editor/lib/browser";
 export const SWITCH_SOURCE_HEADER: Command = {
     id: 'switch_source_header',
     label: 'Switch between source/header file'
+};
+
+export const DUMP_INCLUSIONS: Command = {
+    id: 'dump_inclusions',
+    label: 'Dump file inclusions (Debug)'
+};
+
+export const DUMP_INCLUDED_BY: Command = {
+    id: 'dump_included_by',
+    label: 'Dump files including this file (Debug)'
 };
 
 export const FILE_OPEN_PATH = (path: string): Command => <Command>{
@@ -45,12 +56,25 @@ export class CppCommandContribution implements CommandContribution, MenuContribu
             isEnabled: () => true,
             execute: () => this.switchSourceHeader()
         });
-
+        commands.registerCommand(DUMP_INCLUSIONS, {
+            isEnabled: () => true,
+            execute: () => this.dumpInclusions()
+        });
+        commands.registerCommand(DUMP_INCLUDED_BY, {
+            isEnabled: () => true,
+            execute: () => this.dumpIncludedBy()
+        });
     }
 
     registerMenus(registry: MenuModelRegistry) {
         registry.registerMenuAction([EDITOR_CONTEXT_MENU_ID, "1_undo/redo"], {
             commandId: SWITCH_SOURCE_HEADER.id
+        });
+        registry.registerMenuAction([EDITOR_CONTEXT_MENU_ID, "1_undo/redo"], {
+            commandId: DUMP_INCLUSIONS.id
+        });
+        registry.registerMenuAction([EDITOR_CONTEXT_MENU_ID, "1_undo/redo"], {
+            commandId: DUMP_INCLUDED_BY.id
         });
     }
 
@@ -62,6 +86,22 @@ export class CppCommandContribution implements CommandContribution, MenuContribu
                     open(this.openerService, new URI(sourceUri.toString()));
                 }
             });
+        });
+    }
+
+    protected dumpInclusions(): void {
+        const docIdentifier = this.selectionService.selection.uri.withoutScheme().toString();
+        const params: ExecuteCommandParams = { command: "dumpinclusions", arguments: [docIdentifier] };
+        this.clientContribution.languageClient.then(languageClient => {
+            languageClient.sendRequest(ExecuteCommandRequest.type, params);
+        });
+    }
+
+    protected dumpIncludedBy(): void {
+        const docIdentifier = this.selectionService.selection.uri.withoutScheme().toString();
+        const params: ExecuteCommandParams = { command: "dumpincludedby", arguments: [docIdentifier] };
+        this.clientContribution.languageClient.then(languageClient => {
+            languageClient.sendRequest(ExecuteCommandRequest.type, params);
         });
     }
 }
