@@ -39,6 +39,11 @@ export const REINDEX: Command = {
     label: 'Reindex workspace (Debug)'
 };
 
+export const PRINT_STATS: Command = {
+    id: 'print_stats',
+    label: 'Print Index Statistics (Debug)'
+};
+
 export const FILE_OPEN_PATH = (path: string): Command => <Command>{
     id: `file:openPath`
 };
@@ -64,18 +69,19 @@ export class CppCommandContribution implements CommandContribution {
         });
         commands.registerCommand(REINDEX, {
             isEnabled: () => true,
-            isVisible: () => true,
             execute: () => this.reindex()
         });
         commands.registerCommand(DUMP_INCLUSIONS, {
             isEnabled: () => true,
-            isVisible: () => true,
             execute: () => this.dumpInclusions()
         });
         commands.registerCommand(DUMP_INCLUDED_BY, {
             isEnabled: () => true,
-            isVisible: () => true,
             execute: () => this.dumpIncludedBy()
+        });
+        commands.registerCommand(PRINT_STATS, {
+            isEnabled: () => true,
+            execute: () => this.printStats()
         });
     }
 
@@ -108,6 +114,12 @@ export class CppCommandContribution implements CommandContribution {
 
     private reindex(): void {
         const params: ExecuteCommandParams = { command: "reindex" };
+        this.clientContribution.languageClient.then(languageClient => {
+            languageClient.sendRequest(ExecuteCommandRequest.type, params);
+        });
+    }
+    private printStats(): void {
+        const params: ExecuteCommandParams = { command: "printstats" };
         this.clientContribution.languageClient.then(languageClient => {
             languageClient.sendRequest(ExecuteCommandRequest.type, params);
         });
