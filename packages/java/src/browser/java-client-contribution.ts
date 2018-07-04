@@ -22,6 +22,8 @@ import {
 import { JAVA_LANGUAGE_ID, JAVA_LANGUAGE_NAME } from '../common';
 import { ActionableNotification, ActionableMessage, StatusReport, StatusNotification } from "./java-protocol";
 import { StatusBar, StatusBarEntry, StatusBarAlignment } from "@theia/core/lib/browser";
+import { JavaJNIDefinitionProvider } from "./java-jni-definition-provider";
+import { EditorManager, EditorWidget } from "@theia/editor/lib/browser";
 
 @injectable()
 export class JavaClientContribution extends BaseLanguageClientContribution {
@@ -30,6 +32,12 @@ export class JavaClientContribution extends BaseLanguageClientContribution {
     readonly name = JAVA_LANGUAGE_NAME;
     private readonly statusNotificationName = "java-status-notification";
     private statusBarTimeout: number | undefined;
+
+    @inject(JavaJNIDefinitionProvider)
+    private readonly definitionProvider: JavaJNIDefinitionProvider;
+
+    @inject(EditorManager)
+    protected readonly editorManager: EditorManager;
 
     constructor(
         @inject(Workspace) protected readonly workspace: Workspace,
@@ -54,6 +62,12 @@ export class JavaClientContribution extends BaseLanguageClientContribution {
         languageClient.onNotification(ActionableNotification.type, this.showActionableMessage.bind(this));
         languageClient.onNotification(StatusNotification.type, this.showStatusMessage.bind(this));
         super.onReady(languageClient);
+        this.editorManager.onActiveEditorChanged((widget: EditorWidget) => {
+            const uri = widget.getTargetUri();
+            if (uri && this.languages.registerDefinitionProvider) {
+                return this.languages.registerDefinitionProvider([{ pattern: uri.withoutScheme().toString() }], this.definitionProvider);
+            }
+        });
     }
 
     protected showStatusMessage(message: StatusReport) {

@@ -1,5 +1,5 @@
 /********************************************************************************
- * Copyright (C) 2017 TypeFox and others.
+ * Copyright (C) 2018 Ericsson and others.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,10 +14,21 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 
-export * from '../common';
-export * from './java-protocol';
-export * from './java-commands';
-export * from './java-resource';
-export * from './java-client-contribution';
-export * from './java-frontend-module';
-export * from './java-jni-definition-provider';
+import { injectable, inject } from "inversify";
+import { DefinitionProvider, TextDocumentPositionParams, CancellationToken, Definition, Location, Position, Languages } from "@theia/languages/lib/common";
+
+@injectable()
+export class JavaJNIDefinitionProvider implements DefinitionProvider {
+
+    @inject(Languages)
+    protected readonly languages: Languages;
+
+    constructor(
+    ) {
+    }
+
+    async provideDefinition(params: TextDocumentPositionParams, token: CancellationToken): Promise<Definition> {
+        return Location.create("file:///path/to/Test.java",
+            { start: Position.create(0, 0), end: Position.create(0, 5) });
+    }
+}
